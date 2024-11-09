@@ -2,6 +2,7 @@ from django.db import models
 from rest_framework.permissions import AllowAny
 from api.items.models import Item
 from api.color.models import Color
+from api.season.models import Season
 
 
 class ItemColor(models.Model):
@@ -19,7 +20,7 @@ class ItemColor(models.Model):
 
 class SeasonColor(models.Model):
     season = models.ForeignKey(
-        "Season", on_delete=models.CASCADE, related_name="season_colors"
+        Season, on_delete=models.CASCADE, related_name="season_colors"
     )
     color = models.ForeignKey(
         Color, on_delete=models.CASCADE, related_name="color_seasons"

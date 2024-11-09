@@ -19,9 +19,15 @@ from django.contrib import admin
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 from .items.views import ItemViewSet
+from .brands.views import BrandViewSet
+from .color.views import ColorViewSet
+from .season.views import SeasonViewSet
 
 router = DefaultRouter()
 router.register(r"items", ItemViewSet)
+router.register(r"brands", BrandViewSet)
+router.register(r"colors", ColorViewSet)
+router.register(r"seasons", SeasonViewSet)
 
 urlpatterns = [
     path("admin/", admin.site.urls),

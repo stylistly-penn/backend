@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "api.items",
     "api.brands",
     "api.color",
+    "api.season",
     "api.relationships",
 ]
 
@@ -88,7 +89,7 @@ DATABASES = {
         "NAME": os.getenv("POSTGRES_DB", "django_db"),
         "USER": os.getenv("POSTGRES_USER", "django_user"),
         "PASSWORD": os.getenv("POSTGRES_PASSWORD", "django_password"),
-        "HOST": os.getenv("POSTGRES_HOST", "localhost"),
+        "HOST": os.getenv("POSTGRES_HOST", "db"),
         "PORT": "5432",
     }
 }
