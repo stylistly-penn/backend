@@ -1,6 +1,6 @@
 from rest_framework import viewsets
-from .model import Item
-from .serializer import ItemSerializer
+from .models import Item
+from .serializers import ItemSerializer
 
 
 class ItemViewSet(viewsets.ModelViewSet):

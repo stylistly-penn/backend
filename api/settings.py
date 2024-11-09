@@ -41,6 +41,9 @@ INSTALLED_APPS = [
     "oauth2_provider",
     "rest_framework",
     "api.items",
+    "api.brands",
+    "api.color",
+    "api.relationships",
 ]
 
 MIDDLEWARE = [
