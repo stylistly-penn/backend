@@ -2,11 +2,14 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import viewsets
 from rest_framework.permissions import AllowAny
+import logging
 from .models import Item
 from api.brands.models import Brand
 from api.color.models import Color
 from api.relationships.models import ItemColor
 from .serializers import ItemSerializer
+
+logger = logging.getLogger("api.items")
 
 
 class ItemViewSet(viewsets.ModelViewSet):
@@ -25,23 +28,16 @@ class ItemViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         brand_name = request.data.get("brand")
-        brand = Brand.objects.get(name=brand_name)
+        brand, created = Brand.objects.get_or_create(name=brand_name)
 
-        if brand is None:
-            try:
-                brand = Brand.objects.create(name=brand_name)
-                print(brand)
-            except:
-                return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        if created:
+            print(f"Created brand: {brand_name}")
 
         color_rgb = request.data.get("RGB")
-        color = Color.objects.get(code=color_rgb)
+        color, created = Color.objects.get_or_create(code=color_rgb)
 
-        if color is None:
-            try:
-                color = Color.objects.create(code=color_rgb)
-            except:
-                return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        if created:
+            print(f"Created color: {color_rgb}")
 
         try:
             item = Item.objects.create(
@@ -56,4 +52,5 @@ class ItemViewSet(viewsets.ModelViewSet):
             )
             return Response(status=status.HTTP_201_CREATED)
         except:
+            logger.error("Error creating item", exc_info=True)
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
