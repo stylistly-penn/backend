@@ -4,7 +4,7 @@ from django.contrib.postgres.fields import ArrayField
 
 
 class Brand(models.Model):
-    name = models.CharField(max_length=50)
-    styles = ArrayField(models.CharField(max_length=50))
+    name = models.CharField(max_length=50, unique=True)
+    styles = ArrayField(models.CharField(max_length=50), null=True, blank=True)
 
     permissions_classes = [AllowAny]
