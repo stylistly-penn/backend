@@ -44,6 +44,8 @@ INSTALLED_APPS = [
     "api.color",
     "api.season",
     "api.relationships",
+    'drf_spectacular',
+    'drf_spectacular_sidecar',
 ]
 
 MIDDLEWARE = [
@@ -176,6 +178,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # DJANGO REST_FRAMEWORK
 
 REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly"
     ],
