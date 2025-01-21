@@ -1,8 +1,10 @@
 from rest_framework.response import Response
+from rest_framework.decorators import action
 from rest_framework import status
 from rest_framework import viewsets
 from rest_framework.permissions import AllowAny
 import logging
+import numpy as np
 from .models import Item
 from api.brands.models import Brand
 from api.color.models import Color
@@ -16,6 +18,44 @@ class ItemViewSet(viewsets.ModelViewSet):
     queryset = Item.objects.all()
     serializer_class = ItemSerializer
     permission_classes = [AllowAny]
+
+    CUTOFF_DISTANCE = 50.0
+
+    """
+    Filtering route for color palettes: takes in POST request with query param color
+    - color (string) -> RGB value for color to filter clothes on
+    
+    Filters items by their color being within a certain distance on the color wheel
+    """
+
+    @action(detail=False, methods=["get"], url_path="filter_by_color")
+    def filter_by_color(self, request):
+        color_str = request.query_params.get(
+            "color"
+        )  # Expecting string like "[161 109 68]"
+        if not color_str:
+            return Response({"error": "Color parameter is required"}, status=400)
+
+        try:
+            query_rgb = np.fromstring(color_str.strip("[]"), sep=" ").astype(int)
+        except ValueError:
+            return Response({"error": "Invalid color format"}, status=400)
+
+        filtered_items = []
+        for item in Item.objects.all():
+            for color in item.item_colors.all():
+                item_color_str = color.color.code
+                item_rgb = np.fromstring(item_color_str.strip("[]"), sep=" ").astype(
+                    int
+                )
+
+                # Compute Euclidean distance
+                distance = np.linalg.norm(query_rgb - item_rgb)
+
+                if distance <= self.CUTOFF_DISTANCE:
+                    filtered_items.append(item)
+
+        return Response(ItemSerializer(filtered_items, many=True).data)
 
     """
     Ingestion route: takes in a POST request with a JSON body containing an item
