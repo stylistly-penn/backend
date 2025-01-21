@@ -27,13 +27,14 @@ from .items.views import ItemViewSet
 from .brands.views import BrandViewSet
 from .color.views import ColorViewSet
 from .season.views import SeasonViewSet
-from .accounts.views import LoginView, LogoutView
+from .accounts.views import LoginView, LogoutView, RegisterView, ClassificationViewSet
 
 router = DefaultRouter()
 router.register(r"items", ItemViewSet)
 router.register(r"brands", BrandViewSet)
 router.register(r"colors", ColorViewSet)
 router.register(r"seasons", SeasonViewSet)
+router.register(r"classification", ClassificationViewSet)
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -41,6 +42,7 @@ urlpatterns = [
     # Authentication Routes
     path("auth/login/", LoginView.as_view(), name="login"),
     path("auth/logout/", LogoutView.as_view(), name="logout"),
+    path("auth/register/", RegisterView.as_view(), name="register"),
     # OpenAPI schema
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     # Swagger-UI

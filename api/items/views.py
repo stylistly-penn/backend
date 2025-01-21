@@ -1,3 +1,5 @@
+from concurrent.futures import ThreadPoolExecutor
+from django.db.models import Prefetch
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework import status
@@ -30,9 +32,7 @@ class ItemViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"], url_path="filter_by_color")
     def filter_by_color(self, request):
-        color_str = request.query_params.get(
-            "color"
-        )  # Expecting string like "[161 109 68]"
+        color_str = request.query_params.get("color")
         if not color_str:
             return Response({"error": "Color parameter is required"}, status=400)
 
@@ -41,20 +41,30 @@ class ItemViewSet(viewsets.ModelViewSet):
         except ValueError:
             return Response({"error": "Invalid color format"}, status=400)
 
-        filtered_items = []
-        for item in Item.objects.all():
+        # Pre-fetch related colors to reduce DB queries
+        items = Item.objects.prefetch_related(
+            Prefetch("item_colors", queryset=ItemColor.objects.select_related("color"))
+        ).all()
+
+        def process_item(item):
             for color in item.item_colors.all():
-                item_color_str = color.color.code
-                item_rgb = np.fromstring(item_color_str.strip("[]"), sep=" ").astype(
-                    int
-                )
+                try:
+                    item_rgb = np.fromstring(
+                        color.color.code.strip("[]"), sep=" "
+                    ).astype(int)
+                    distance = np.linalg.norm(query_rgb - item_rgb)
+                    if distance <= self.CUTOFF_DISTANCE:
+                        return item
+                except ValueError:
+                    continue
+            return None
 
-                # Compute Euclidean distance
-                distance = np.linalg.norm(query_rgb - item_rgb)
+        # Use ThreadPoolExecutor to parallelize processing
+        with ThreadPoolExecutor() as executor:
+            results = list(executor.map(process_item, items))
 
-                if distance <= self.CUTOFF_DISTANCE:
-                    filtered_items.append(item)
-
+        # Remove None values and serialize
+        filtered_items = [item for item in results if item]
         return Response(ItemSerializer(filtered_items, many=True).data)
 
     """

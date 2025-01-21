@@ -18,14 +18,25 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS('Created "Test Season"'))
 
         # Assign three warm-tone colors for "Test Season"
-        color_codes = [
-            "[179 97 71]",  # Deep Terracotta
-            "[112 128 79]",  # Muted Olive Green
-            "[139 121 94]",  # Warm Taupe
+        colors = [
+            ("[179 97 71]", "Deep Terracotta"),
+            ("[112 128 79]", "Muted Olive Green"),
+            ("[139 121 94]", "Warm Taupe"),
         ]
 
-        for color_code in color_codes:
-            color, _ = Color.objects.get_or_create(code=color_code)
+        for code, name in colors:
+            color, created = Color.objects.get_or_create(
+                code=code, defaults={"name": name}
+            )
+
+            # If the color already exists but has a different name, update it
+            if not created and color.name != name:
+                color.name = name
+                color.save()
+                self.stdout.write(
+                    self.style.WARNING(f'Updated color {code} name to "{name}"')
+                )
+
             SeasonColor.objects.get_or_create(season=season, color=color)
 
         # Create test user
