@@ -2,7 +2,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework import status
 from rest_framework import viewsets
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated
 import logging
 import numpy as np
 from .models import Item
@@ -17,7 +17,7 @@ logger = logging.getLogger("api.items")
 class ItemViewSet(viewsets.ModelViewSet):
     queryset = Item.objects.all()
     serializer_class = ItemSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     CUTOFF_DISTANCE = 50.0
 
@@ -67,6 +67,7 @@ class ItemViewSet(viewsets.ModelViewSet):
     """
 
     def create(self, request, *args, **kwargs):
+        print(f"🔎 DEBUG: Request headers received: {request.headers}")
         brand_name = request.data.get("brand")
         brand, created = Brand.objects.get_or_create(name=brand_name)
 
