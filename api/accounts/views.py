@@ -8,6 +8,12 @@ from rest_framework.viewsets import ViewSet
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
+from .serializers import (
+    LoginSerializer,
+    RegisterSerializer,
+    LogoutSerializer,
+    ClassificationSerializer,
+)
 
 User = get_user_model()
 
@@ -21,6 +27,7 @@ class ClassificationViewSet(ViewSet):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]  # Allows image file uploads
+    serializer_class = ClassificationSerializer
 
     queryset = User.objects.none()
 
@@ -55,6 +62,7 @@ class RegisterView(APIView):
     """
 
     permission_classes = [AllowAny]
+    serializer_class = RegisterSerializer
 
     def post(self, request):
         username = request.data.get("username")
@@ -97,6 +105,7 @@ class RegisterView(APIView):
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
+    serializer_class = LoginSerializer
 
     def post(self, request):
         username = request.data.get("username")
@@ -145,6 +154,8 @@ class LogoutView(APIView):
     """
     Handles user logout by clearing the JWT cookie.
     """
+
+    serializer_class = LogoutSerializer
 
     def post(self, request):
         response = Response({"message": "Logged out"}, status=status.HTTP_200_OK)

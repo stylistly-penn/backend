@@ -4,7 +4,7 @@ from api.relationships.models import ItemColor
 from api.color.models import Color
 
 
-class ColorSerializer(serializers.ModelSerializer):
+class ItemColorSerializer(serializers.ModelSerializer):
     """Serializes the color information along with its image URL."""
 
     code = serializers.CharField(
@@ -20,7 +20,7 @@ class ColorSerializer(serializers.ModelSerializer):
 class ItemSerializer(serializers.ModelSerializer):
     """Serializes the Item model, including associated colors and images."""
 
-    colors = ColorSerializer(source="item_colors", many=True)
+    colors = ItemColorSerializer(source="item_colors", many=True)
 
     class Meta:
         model = Item

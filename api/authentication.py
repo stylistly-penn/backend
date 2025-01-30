@@ -1,5 +1,7 @@
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.conf import settings
+from drf_spectacular.extensions import OpenApiAuthenticationExtension
+from drf_spectacular.utils import OpenApiTypes
 
 
 class CookieJWTAuthentication(JWTAuthentication):
@@ -16,3 +18,16 @@ class CookieJWTAuthentication(JWTAuthentication):
             return self.get_user(validated_token), validated_token
 
         return None
+
+
+class CookieJWTAuthenticationScheme(OpenApiAuthenticationExtension):
+    target_class = "api.authentication.CookieJWTAuthentication"  # Your auth class
+    name = "JWT via Cookie"
+
+    def get_security_definition(self, *args, **kwargs):  # Accepts extra arguments
+        return {
+            "type": "apiKey",
+            "in": "cookie",
+            "name": "access_token",  # Ensure this matches the cookie name
+            "description": "JWT stored in an HTTP-only cookie",
+        }

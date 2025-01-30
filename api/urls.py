@@ -15,9 +15,10 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
+from rest_framework.permissions import AllowAny
+from rest_framework.routers import DefaultRouter
 from django.contrib import admin
 from django.urls import include, path
-from rest_framework.routers import DefaultRouter
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularSwaggerView,
@@ -43,18 +44,24 @@ urlpatterns = [
     path("auth/login/", LoginView.as_view(), name="login"),
     path("auth/logout/", LogoutView.as_view(), name="logout"),
     path("auth/register/", RegisterView.as_view(), name="register"),
-    # OpenAPI schema
-    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
-    # Swagger-UI
+    # ✅ OpenAPI schema (Make it Public)
+    path(
+        "api/schema/",
+        SpectacularAPIView.as_view(permission_classes=[AllowAny]),
+        name="schema",
+    ),
+    # ✅ Swagger-UI (Make it Public)
     path(
         "api/schema/swagger-ui/",
-        SpectacularSwaggerView.as_view(url_name="schema"),
+        SpectacularSwaggerView.as_view(
+            url_name="schema", permission_classes=[AllowAny]
+        ),
         name="swagger-ui",
     ),
-    # Redoc
+    # ✅ Redoc (Make it Public)
     path(
         "api/schema/redoc/",
-        SpectacularRedocView.as_view(url_name="schema"),
+        SpectacularRedocView.as_view(url_name="schema", permission_classes=[AllowAny]),
         name="redoc",
     ),
 ]

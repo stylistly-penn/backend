@@ -2,9 +2,10 @@ from rest_framework import serializers
 from api.season.models import Season
 from api.color.models import Color
 from api.relationships.models import SeasonColor
+from drf_spectacular.utils import extend_schema_field
 
 
-class ColorSerializer(serializers.ModelSerializer):
+class SeasonColorSerializer(serializers.ModelSerializer):
     """Serializes colors associated with a season."""
 
     code = serializers.CharField()
@@ -23,6 +24,7 @@ class SeasonSerializer(serializers.ModelSerializer):
         model = Season
         fields = ["name", "colors"]
 
+    @extend_schema_field(serializers.ListField(child=serializers.CharField()))
     def get_colors(self, obj):
         colors = Color.objects.filter(color_seasons__season=obj)
-        return ColorSerializer(colors, many=True).data
+        return SeasonColorSerializer(colors, many=True).data
