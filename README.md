@@ -17,3 +17,6 @@
     The ingestion works by logging in with a special user account and sending **POST** requests to the `/items` endpoints to add new clothing items to the database from the `jcrew.csv`.
 
 ## That's it. Happy hacking :D
+
+Notes from Taha:
+I added mkdir -p /app/logs to entrypoint.sh since it was kicking up a fuss. Furthermore, wanted to create the test user since it did not get automatically added. As a result, we had to run `docker-compose exec web -it /bin/bash` and then this opened up a new sub terminal where I ran `python manage.py create_test_user`.
