@@ -20,3 +20,4 @@
 
 Notes from Taha:
 I added mkdir -p /app/logs to entrypoint.sh since it was kicking up a fuss. Furthermore, wanted to create the test user since it did not get automatically added. As a result, we had to run `docker-compose exec web -it /bin/bash` and then this opened up a new sub terminal where I ran `python manage.py create_test_user`. TO clear volumes - `docker rm volume backend_pgdata `
+This one worked better - `docker compose down --volumes`
