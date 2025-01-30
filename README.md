@@ -4,7 +4,7 @@
 
 0.  Install `pyenv` [GIF FROM BOTY](https://github.com/pyenv/pyenv/blob/master/install_local_python.gif)
 
-1.  Set up poetry! make sure you have `poetry` installed it is a package manager for python and initialize for the repository. i believe the command is `poetry shell` but yea just double check maybe need to `poetry install` first
+1.  Set up poetry! make sure you have `poetry` installed it is a package manager for python and initialize for the repository. i believe the command is `poetry shell` but yea just double check maybe need to `poetry install` first. Might have to install this too [plugin]https://github.com/python-poetry/poetry-plugin-shell
 
 2.  Now run the backend using Docker! `docker-compose up --build` should be good
 
