@@ -8,6 +8,8 @@ from rest_framework.viewsets import ViewSet
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
+
+from api.authentication import CookieJWTAuthentication
 from .serializers import (
     LoginSerializer,
     RegisterSerializer,
@@ -16,6 +18,21 @@ from .serializers import (
 )
 
 User = get_user_model()
+
+
+class AuthCheckView(APIView):
+    """
+    Validates JWT from HttpOnly cookie and returns authentication status.
+    """
+
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response(
+            {"authenticated": True, "username": request.user.username},
+            status=status.HTTP_200_OK,
+        )
 
 
 class ClassificationViewSet(ViewSet):

@@ -1,30 +1,45 @@
 from rest_framework import serializers
-from django.contrib.auth import get_user_model, authenticate
+from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
+from api.season.models import Season
 
 User = get_user_model()
 
 
 ### ✅ Serializer for LoginView
 class LoginSerializer(serializers.Serializer):
-    email = serializers.EmailField()
+    username = serializers.CharField()
     password = serializers.CharField(write_only=True)
+    colors = serializers.ListField(
+        child=serializers.DictField(), read_only=True
+    )  # List of colors
 
     def validate(self, data):
-        user = authenticate(email=data["email"], password=data["password"])
-        if not user:
-            raise serializers.ValidationError("Invalid email or password")
+        username = data.get("username")
+        password = data.get("password")
+
+        if not username or not password:
+            raise serializers.ValidationError("Username and password are required")
+
+        user = User.objects.filter(username=username).first()
+        if user is None or not user.check_password(password):
+            raise serializers.ValidationError("Invalid username or password")
 
         refresh = RefreshToken.for_user(user)
+
+        # Get the user's season colors
+        season = user.season
+        colors = (
+            list(season.season_colors.values("color__id", "color__name", "color__code"))
+            if season
+            else []
+        )
+
         return {
-            "user": {
-                "id": user.id,
-                "email": user.email,
-                "first_name": user.first_name,
-                "last_name": user.last_name,
-            },
+            "user": {"id": user.id, "username": user.username},
             "access": str(refresh.access_token),
             "refresh": str(refresh),
+            "colors": colors,
         }
 
 
@@ -35,7 +50,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("email", "first_name", "last_name", "password", "password2")
+        fields = ("username", "password", "password2")
 
     def validate(self, data):
         if data["password"] != data["password2"]:
@@ -44,29 +59,21 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data.pop("password2")
-        user = User.objects.create_user(**validated_data)
+        user = User.objects.create(username=validated_data["username"], season=None)
+        user.set_password(validated_data["password"])
+        user.save()
         return user
 
 
 ### ✅ Serializer for LogoutView
 class LogoutSerializer(serializers.Serializer):
-    refresh_token = serializers.CharField()
-
-    def validate_refresh_token(self, token):
-        try:
-            RefreshToken(token).blacklist()
-        except Exception:
-            raise serializers.ValidationError("Invalid token")
-        return token
+    pass  # Logout doesn't need data, it just clears cookies
 
 
 ### ✅ Serializer for ClassificationViewSet
 class ClassificationSerializer(serializers.Serializer):
-    input_text = serializers.CharField()
-    result = serializers.CharField(read_only=True)
+    image = serializers.ImageField()
 
     def create(self, validated_data):
-        # Example: simple text classification
-        input_text = validated_data["input_text"]
-        result = "Category A" if "keyword" in input_text else "Category B"
-        return {"input_text": input_text, "result": result}
+        # TODO: Implement actual classification logic
+        return {"message": "Image received successfully. Classification pending."}
