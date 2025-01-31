@@ -41,6 +41,7 @@ def create_item(row, token):
         "price": float(row["Cost"][1:]),
         "brand": "jcrew",
         "item_url": row["Item Url"],
+        "product_url": row["Product Url"],
         "RGB": row["RGB"],
     }
     headers = {
