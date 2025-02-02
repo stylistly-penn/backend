@@ -95,6 +95,7 @@ class ItemViewSet(viewsets.ModelViewSet):
                 description=request.data.get("description"),
                 price=float(request.data.get("price")),
                 brand=brand,
+                product_url=request.data.get("product_url"),
             )
             ic = ItemColor.objects.create(
                 item=item,

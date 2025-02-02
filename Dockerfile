@@ -10,6 +10,9 @@ ENV PATH="/root/.local/bin:$PATH"
 # Set the working directory
 WORKDIR /app
 
+# Create the logs directory
+RUN mkdir -p /app/logs
+
 # Copy the project files and set permissions for entrypoint.sh in a single layer
 COPY pyproject.toml poetry.lock /app/
 COPY api /app/api

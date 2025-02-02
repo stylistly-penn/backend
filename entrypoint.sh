@@ -1,4 +1,6 @@
 #!/bin/sh
+# Create logs directory if it doesn't exist
+mkdir -p /app/logs
 
 # Wait for the database to be ready
 until pg_isready -h "$POSTGRES_HOST" -p 5432; do

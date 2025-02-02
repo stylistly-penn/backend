@@ -9,18 +9,34 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('brands', '__first__'),
+        ("brands", "__first__"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Item',
+            name="Item",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('price', models.FloatField()),
-                ('size', models.CharField(max_length=50)),
-                ('description', models.TextField()),
-                ('brand', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='items', to='brands.brand')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("price", models.FloatField()),
+                ("size", models.CharField(max_length=50)),
+                ("description", models.TextField()),
+                ("product_url", models.TextField()),
+                (
+                    "brand",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="items",
+                        to="brands.brand",
+                    ),
+                ),
             ],
         ),
     ]

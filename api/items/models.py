@@ -7,6 +7,7 @@ class Item(models.Model):
     price = models.FloatField()
     size = models.CharField(max_length=50)
     description = models.TextField()
+    product_url = models.TextField()
     brand = models.ForeignKey(Brand, on_delete=models.CASCADE, related_name="items")
 
     permissions_classes = [AllowAny]
