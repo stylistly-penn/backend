@@ -1,4 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
+from django.db import transaction, IntegrityError
 from django.db.models import Prefetch
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -79,30 +80,42 @@ class ItemViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         print(f"🔎 DEBUG: Request headers received: {request.headers}")
         brand_name = request.data.get("brand")
-        brand, created = Brand.objects.get_or_create(name=brand_name)
-
-        if created:
-            print(f"Created brand: {brand_name}")
+        brand, _ = Brand.objects.get_or_create(name=brand_name)
 
         color_rgb = request.data.get("RGB")
-        color, created = Color.objects.get_or_create(code=color_rgb)
-
-        if created:
-            print(f"Created color: {color_rgb}")
+        color, _ = Color.objects.get_or_create(code=color_rgb)
 
         try:
-            item = Item.objects.create(
-                description=request.data.get("description"),
-                price=float(request.data.get("price")),
-                brand=brand,
-                product_url=request.data.get("product_url"),
-            )
-            ic = ItemColor.objects.create(
-                item=item,
-                color=color,
-                image_url=request.data.get("item_url"),
-            )
+            with transaction.atomic():
+                # Ensure unique constraint prevents duplicates
+                item, created = Item.objects.get_or_create(
+                    description=request.data.get("description"),
+                    price=float(request.data.get("price")),
+                    brand=brand,
+                    product_url=request.data.get("product_url"),
+                )
+
+                if not created:
+                    print(f"Item already exists: {item}")
+
+                # Check if ItemColor relationship exists
+                ic, created = ItemColor.objects.get_or_create(
+                    item=item,
+                    color=color,
+                    defaults={"image_url": request.data.get("item_url")},
+                )
+
+                if not created:
+                    print(f"ItemColor already exists: {ic}")
+
             return Response(status=status.HTTP_201_CREATED)
-        except:
+
+        except IntegrityError:
+            logger.error("IntegrityError: Duplicate detected!", exc_info=True)
+            return Response(
+                status=status.HTTP_409_CONFLICT
+            )  # Return 409 Conflict for duplicate
+
+        except Exception:
             logger.error("Error creating item", exc_info=True)
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)

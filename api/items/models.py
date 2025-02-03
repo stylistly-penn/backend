@@ -11,3 +11,11 @@ class Item(models.Model):
     brand = models.ForeignKey(Brand, on_delete=models.CASCADE, related_name="items")
 
     permissions_classes = [AllowAny]
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["description", "price", "size", "product_url"],
+                name="unique_item_constraint",
+            )
+        ]

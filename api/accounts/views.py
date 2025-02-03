@@ -10,7 +10,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
 
 from api.authentication import CookieJWTAuthentication
-from .serializers import (
+from api.accounts.serializers import (
     LoginSerializer,
     RegisterSerializer,
     LogoutSerializer,
@@ -122,6 +122,7 @@ class RegisterView(APIView):
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
+    authentication_classes = []
     serializer_class = LoginSerializer
 
     def post(self, request):
