@@ -1,5 +1,5 @@
 matplotlib==3.5.2
-numpy==1.21.5
+numpy==1.21.5; python_version < '3.11'
 ray==2.2.0
 opencv_python==4.5.3.56
 Pillow==9.2.0
