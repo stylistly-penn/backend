@@ -148,7 +148,8 @@ class LoginView(APIView):
         if not email:
             user = authenticate(username=username, password=password)
         else:
-            user = authenticate(email=email, password=password)
+            user_obj = User.objects.filter(email=email).first()
+            user = authenticate(username=user_obj.username, password=password)
 
         if user is None:
             print("DEBUG: Authentication failed, user not found")
