@@ -124,20 +124,8 @@ class RegisterView(APIView):
         user.set_password(password)
         user.save()
 
-        # Generate JWT tokens
-        refresh = RefreshToken.for_user(user)
-
         response = Response(
             {"message": "Registration successful"}, status=status.HTTP_201_CREATED
-        )
-
-        # Set the access token in an HTTP-only cookie
-        response.set_cookie(
-            key="access_token",
-            value=str(refresh.access_token),
-            httponly=True,
-            secure=False,  # Set to True in production with HTTPS
-            samesite="Lax",
         )
 
         return response
