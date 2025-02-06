@@ -30,6 +30,7 @@ router.register(r"classification", ClassificationViewSet)
 urlpatterns = [
     # ✅ Django Admin
     path("admin/", admin.site.urls),
+    path("grappelli/", include("grappelli.urls")),
     # ✅ API Routes (ViewSets)
     path("", include(router.urls)),
     # ✅ Authentication Routes

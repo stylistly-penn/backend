@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import Item
 from api.relationships.models import ItemColor
 from api.color.models import Color
+from api.brands.models import Brand
 
 
 class ItemColorSerializer(serializers.ModelSerializer):
@@ -20,6 +21,8 @@ class ItemColorSerializer(serializers.ModelSerializer):
 class ItemSerializer(serializers.ModelSerializer):
     """Serializes the Item model, including associated colors and images."""
 
+    brand = serializers.PrimaryKeyRelatedField(queryset=Brand.objects.all())
+    brand_name = serializers.CharField(source="brand.name", read_only=True)
     colors = ItemColorSerializer(source="item_colors", many=True)
 
     class Meta:
@@ -31,5 +34,6 @@ class ItemSerializer(serializers.ModelSerializer):
             "description",
             "product_url",
             "brand",
+            "brand_name",
             "colors",
         ]

@@ -10,18 +10,25 @@ User = get_user_model()
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField(write_only=True)
+    email = serializers.EmailField()
     colors = serializers.ListField(
         child=serializers.DictField(), read_only=True
     )  # List of colors
 
     def validate(self, data):
         username = data.get("username")
+        email = data.get("email")
         password = data.get("password")
 
-        if not username or not password:
-            raise serializers.ValidationError("Username and password are required")
+        if (not username and not email) or not password:
+            raise serializers.ValidationError(
+                "Username/email and password are required"
+            )
 
-        user = User.objects.filter(username=username).first()
+        if username:
+            user = User.objects.filter(username=username).first()
+        else:
+            user = User.objects.filter(email=email).first()
         if user is None or not user.check_password(password):
             raise serializers.ValidationError("Invalid username or password")
 
@@ -36,7 +43,7 @@ class LoginSerializer(serializers.Serializer):
         )
 
         return {
-            "user": {"id": user.id, "username": user.username},
+            "user": {"id": user.id, "username": user.username, "email": user.email},
             "access": str(refresh.access_token),
             "refresh": str(refresh),
             "colors": colors,
@@ -50,7 +57,14 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("username", "password", "password2")
+        fields = (
+            "email",
+            "username",
+            "first_name",
+            "last_name",
+            "password",
+            "password2",
+        )
 
     def validate(self, data):
         if data["password"] != data["password2"]:

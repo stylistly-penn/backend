@@ -30,7 +30,11 @@ class AuthCheckView(APIView):
 
     def get(self, request):
         return Response(
-            {"authenticated": True, "username": request.user.username},
+            {
+                "authenticated": True,
+                "username": request.user.username,
+                "email": request.user.email,
+            },
             status=status.HTTP_200_OK,
         )
 
@@ -82,22 +86,40 @@ class RegisterView(APIView):
     serializer_class = RegisterSerializer
 
     def post(self, request):
+        email = request.data.get("email")
         username = request.data.get("username")
         password = request.data.get("password")
+        first_name = request.data.get("first_name")
+        last_name = request.data.get("last_name")
 
-        if not username or not password:
+        if not email or not password:
             return Response(
-                {"error": "Username and password are required"},
+                {"error": "Email and password are required"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if User.objects.filter(username=username).exists():
+        if User.objects.filter(email=email).exists():
             return Response(
-                {"error": "Username already taken"},
+                {"error": "Email already taken"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        user = User.objects.create(username=username, season=None)
+        if username:
+            if User.objects.filter(username=username).exists():
+                return Response(
+                    {"error": "Username already taken"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        else:
+            username = first_name[:1] + last_name + str(User.objects.count())
+
+        user = User.objects.create(
+            username=username,
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+            season=None,
+        )
         user.set_password(password)
         user.save()
 
@@ -127,11 +149,17 @@ class LoginView(APIView):
 
     def post(self, request):
         username = request.data.get("username")
+        email = request.data.get("email")
         password = request.data.get("password")
 
-        print(f"DEBUG: Received username={username}, password={password}")
+        print(
+            f"DEBUG: Received username={username}, email={email}, password={password}"
+        )
 
-        user = authenticate(username=username, password=password)
+        if not email:
+            user = authenticate(username=username, password=password)
+        else:
+            user = authenticate(email=email, password=password)
 
         if user is None:
             print("DEBUG: Authentication failed, user not found")

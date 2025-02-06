@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 import os
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -30,9 +31,10 @@ ALLOWED_HOSTS = ["0.0.0.0", "localhost"]
 
 
 # Application definition
-
 INSTALLED_APPS = [
+    "grappelli",  # Added for enhanced admin UI (requires installation)
     "django.contrib.admin",
+    "django.contrib.admindocs",  # Added for in-app admin documentation
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
@@ -47,6 +49,7 @@ INSTALLED_APPS = [
     "api.relationships",
     "drf_spectacular",
     "drf_spectacular_sidecar",
+    "api.apps.ApiConfig",
 ]
 
 MIDDLEWARE = [
@@ -60,6 +63,8 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+# Allow framing of admin pages (needed for some admin enhancements)
+X_FRAME_OPTIONS = "SAMEORIGIN"
 
 # Ensure Django passes `Authorization` headers
 CORS_ALLOW_HEADERS = [
@@ -90,7 +95,6 @@ TEMPLATES = [
 WSGI_APPLICATION = "api.wsgi.application"
 
 # Auth
-
 AUTH_USER_MODEL = "accounts.User"  # Use the custom User model
 
 INSTALLED_APPS += [
@@ -118,8 +122,6 @@ REST_FRAMEWORK = {
 }
 
 # JWT Configuration
-from datetime import timedelta
-
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
@@ -148,8 +150,6 @@ DATABASES = {
 }
 
 # Logging
-
-import os
 
 LOGGING = {
     "version": 1,
