@@ -43,21 +43,25 @@ urlpatterns = [
     # ✅ OpenAPI Schema (Make it Public)
     path(
         "api/schema/",
-        SpectacularAPIView.as_view(permission_classes=[AllowAny]),
+        SpectacularAPIView.as_view(
+            permission_classes=[AllowAny], authentication_classes=[]
+        ),
         name="schema",
     ),
     # ✅ Swagger-UI (Make it Public)
     path(
         "api/schema/swagger-ui/",
         SpectacularSwaggerView.as_view(
-            url_name="schema", permission_classes=[AllowAny]
+            url_name="schema", permission_classes=[AllowAny], authentication_classes=[]
         ),
         name="swagger-ui",
     ),
     # ✅ Redoc (Make it Public)
     path(
         "api/schema/redoc/",
-        SpectacularRedocView.as_view(url_name="schema", permission_classes=[AllowAny]),
+        SpectacularRedocView.as_view(
+            url_name="schema", permission_classes=[AllowAny], authentication_classes=[]
+        ),
         name="redoc",
     ),
 ]

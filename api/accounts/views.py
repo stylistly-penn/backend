@@ -83,6 +83,7 @@ class RegisterView(APIView):
     """
 
     permission_classes = [AllowAny]
+    authentication_classes = []
     serializer_class = RegisterSerializer
 
     def post(self, request):
