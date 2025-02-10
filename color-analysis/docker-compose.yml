@@ -1,0 +1,6 @@
+services:
+  api:
+    image: color-analysis
+    build: .
+    ports:
+      - "8000:8000"
