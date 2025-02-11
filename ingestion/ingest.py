@@ -28,7 +28,7 @@ def get_auth_token():
         if not token:
             print(f"❌ Login failed! No token returned: {response.text}")
             return None
-        print(f"✅ Login successful! Token: {token}")
+        print(f" Login successful! Token: {token}")
         return token
     else:
         print(f"❌ Login failed! Response: {response.text}")
@@ -104,7 +104,7 @@ def process_dataframes(dfs):
                 future.result() for future in concurrent.futures.as_completed(futures)
             ]
         if all(result and result.status_code == 201 for result in results):
-            print("✅ All items processed for brand: ", brand)
+            print(" All items processed for brand: ", brand)
         else:
             print("❌ Some items failed to process for brand: ", brand)
         return results

@@ -1,13 +1,20 @@
 from concurrent.futures import ThreadPoolExecutor
+from rest_framework import serializers
 from django.db import transaction, IntegrityError
 from django.db.models import Prefetch
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework import status
 from rest_framework import viewsets
-from rest_framework.permissions import IsAuthenticated
+from api.permissions import IsAuthenticatedReadOrAdminWrite
 import logging
 import numpy as np
+from drf_spectacular.utils import (
+    extend_schema,
+    OpenApiParameter,
+    inline_serializer,
+    OpenApiTypes,
+)
 from .models import Item
 from api.brands.models import Brand
 from api.color.models import Color
@@ -20,7 +27,7 @@ logger = logging.getLogger("api.items")
 class ItemViewSet(viewsets.ModelViewSet):
     queryset = Item.objects.all()
     serializer_class = ItemSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedReadOrAdminWrite]
 
     CUTOFF_DISTANCE = 50.0
 
@@ -31,7 +38,21 @@ class ItemViewSet(viewsets.ModelViewSet):
     Filters items by their color being within a certain distance on the color wheel
     """
 
-    @action(detail=False, methods=["get"], url_path="filter_by_color")
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="color",
+                description="The color to filter by in format [R G B]",
+                required=True,
+                type=str,
+            )
+        ]
+    )
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="filter_by_color",
+    )
     def filter_by_color(self, request):
         color_str = request.query_params.get("color")
         if not color_str:
@@ -77,6 +98,29 @@ class ItemViewSet(viewsets.ModelViewSet):
     - RGB (string)
     """
 
+    @extend_schema(
+        request=inline_serializer(
+            name="ItemIngestionInput",
+            fields={
+                "description": serializers.CharField(help_text="Item description"),
+                "price": serializers.FloatField(help_text="Price of the item"),
+                "brand": serializers.CharField(help_text="Brand name of the item"),
+                "product_url": serializers.URLField(help_text="URL for the product"),
+                "RGB": serializers.CharField(
+                    help_text="RGB color as a string, e.g. '[59 68 52]'"
+                ),
+            },
+        ),
+        responses={201: OpenApiTypes.NONE},
+        description="""
+            Ingestion route: takes in a POST request with a JSON body containing an item:
+            - **description** (string)
+            - **price** (float)
+            - **brand** (string)
+            - **product_url** (string)
+            - **RGB** (string)
+        """,
+    )
     def create(self, request, *args, **kwargs):
         print(f"🔎 DEBUG: Request headers received: {request.headers}")
         brand_name = request.data.get("brand")

@@ -1,16 +1,16 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
-from api.season.models import Season
+from api.season.serializers import SeasonSerializer  # Import the season serializer
 
 User = get_user_model()
 
 
-### ✅ Serializer for LoginView
+### Serializer for LoginView
 class LoginSerializer(serializers.Serializer):
-    username = serializers.CharField()
+    username = serializers.CharField(required=False)
     password = serializers.CharField(write_only=True)
-    email = serializers.EmailField()
+    email = serializers.EmailField(required=False)
     colors = serializers.ListField(
         child=serializers.DictField(), read_only=True
     )  # List of colors
@@ -34,23 +34,14 @@ class LoginSerializer(serializers.Serializer):
 
         refresh = RefreshToken.for_user(user)
 
-        # Get the user's season colors
-        season = user.season
-        colors = (
-            list(season.season_colors.values("color__id", "color__name", "color__code"))
-            if season
-            else []
-        )
-
         return {
-            "user": {"id": user.id, "username": user.username, "email": user.email},
+            "user": UserSerializer(user).data,  # Use the UserSerializer here
             "access": str(refresh.access_token),
             "refresh": str(refresh),
-            "colors": colors,
         }
 
 
-### ✅ Serializer for RegisterView
+### Serializer for RegisterView
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
     password2 = serializers.CharField(write_only=True, min_length=8)
@@ -79,15 +70,17 @@ class RegisterSerializer(serializers.ModelSerializer):
         return user
 
 
-### ✅ Serializer for LogoutView
+### Serializer for LogoutView
 class LogoutSerializer(serializers.Serializer):
     pass  # Logout doesn't need data, it just clears cookies
 
 
-### ✅ Serializer for ClassificationViewSet
-class ClassificationSerializer(serializers.Serializer):
-    image = serializers.ImageField()
+### New Serializer for User
+class UserSerializer(serializers.ModelSerializer):
+    season = SeasonSerializer(
+        read_only=True
+    )  # Use the SeasonSerializer for the season field
 
-    def create(self, validated_data):
-        # TODO: Implement actual classification logic
-        return {"message": "Image received successfully. Classification pending."}
+    class Meta:
+        model = User
+        fields = ("username", "email", "season")

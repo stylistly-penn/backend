@@ -22,5 +22,8 @@ python manage.py migrate
 # Create test user
 python manage.py create_test_user
 
+# Create season objects
+python manage.py create_seasons
+
 # Start the server with hot reloading
 exec poetry run watchmedo auto-restart --directory=api --pattern=*.py --recursive -- python manage.py runserver 0.0.0.0:8000

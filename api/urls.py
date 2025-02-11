@@ -15,32 +15,27 @@ from .accounts.views import (
     LoginView,
     LogoutView,
     RegisterView,
-    ClassificationViewSet,
-    AuthCheckView,  # ✅ Import AuthCheckView
+    AuthCheckView,
 )
 
-# ✅ Register ViewSets for Routers
 router = DefaultRouter()
 router.register(r"items", ItemViewSet)
 router.register(r"brands", BrandViewSet)
 router.register(r"colors", ColorViewSet)
 router.register(r"seasons", SeasonViewSet)
-router.register(r"classification", ClassificationViewSet)
 
 urlpatterns = [
-    # ✅ Django Admin
+    # Django Admin
     path("admin/", admin.site.urls),
     path("grappelli/", include("grappelli.urls")),
-    # ✅ API Routes (ViewSets)
+    #  API Routes (ViewSets)
     path("", include(router.urls)),
-    # ✅ Authentication Routes
+    #  Authentication Routes
     path("auth/login/", LoginView.as_view(), name="login"),
     path("auth/logout/", LogoutView.as_view(), name="logout"),
     path("auth/register/", RegisterView.as_view(), name="register"),
-    path(
-        "auth/check/", AuthCheckView.as_view(), name="auth-check"
-    ),  # ✅ Add auth-check
-    # ✅ OpenAPI Schema (Make it Public)
+    path("auth/check/", AuthCheckView.as_view(), name="auth-check"),  #  Add auth-check
+    #  OpenAPI Schema (Make it Public)
     path(
         "api/schema/",
         SpectacularAPIView.as_view(
@@ -48,15 +43,7 @@ urlpatterns = [
         ),
         name="schema",
     ),
-    # ✅ Swagger-UI (Make it Public)
-    path(
-        "api/schema/swagger-ui/",
-        SpectacularSwaggerView.as_view(
-            url_name="schema", permission_classes=[AllowAny], authentication_classes=[]
-        ),
-        name="swagger-ui",
-    ),
-    # ✅ Redoc (Make it Public)
+    #  Redoc (Make it Public)
     path(
         "api/schema/redoc/",
         SpectacularRedocView.as_view(

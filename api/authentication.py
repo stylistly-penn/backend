@@ -2,6 +2,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.conf import settings
 from drf_spectacular.extensions import OpenApiAuthenticationExtension
 from drf_spectacular.utils import OpenApiTypes
+from rest_framework.permissions import SAFE_METHODS
 
 
 class CookieJWTAuthentication(JWTAuthentication):

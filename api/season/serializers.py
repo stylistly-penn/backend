@@ -1,7 +1,6 @@
 from rest_framework import serializers
 from api.season.models import Season
 from api.color.models import Color
-from api.relationships.models import SeasonColor
 from drf_spectacular.utils import extend_schema_field
 
 
