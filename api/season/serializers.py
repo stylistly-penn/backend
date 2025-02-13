@@ -8,10 +8,13 @@ class SeasonColorSerializer(serializers.ModelSerializer):
     """Serializes colors associated with a season."""
 
     code = serializers.CharField()
+    color_id = serializers.PrimaryKeyRelatedField(
+        queryset=Color.objects.all(), source="id"
+    )
 
     class Meta:
         model = Color
-        fields = ["code"]
+        fields = ["code", "color_id"]
 
 
 class SeasonSerializer(serializers.ModelSerializer):

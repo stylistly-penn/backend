@@ -5,4 +5,4 @@ from .models import Color
 class ColorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Color
-        fields = ["name", "code"]
+        fields = ["id", "name", "code"]
