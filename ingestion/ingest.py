@@ -2,9 +2,18 @@ import requests
 import json
 import pandas as pd
 import math
+import glob
+import os
 
 # Load the CSV files
-jcrew_df = pd.read_csv("./jcrew.csv")
+folder_path = "./jcrew"
+
+# Get all CSV file paths inside the folder
+csv_files = glob.glob(os.path.join(folder_path, "*.csv"))
+print(csv_files)
+# Read all CSV files and concatenate them into one DataFrame
+jcrew_df = pd.concat((pd.read_csv(file) for file in csv_files), ignore_index=True)
+
 uniqlo_df = pd.read_csv("./uniqlo.csv")
 
 # Use a regex to extract cost values
@@ -152,5 +161,5 @@ def process_dataframes(dfs):
 
 
 # Run the script (choose one or both dataframes)
-# process_dataframes([[jcrew_df, "J. Crew"]])
-process_dataframes([[uniqlo_df, "Uniqlo"]])
+process_dataframes([[jcrew_df, "J. Crew"]])
+# process_dataframes([[uniqlo_df, "Uniqlo"]])
