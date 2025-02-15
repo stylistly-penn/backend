@@ -4,6 +4,15 @@ import pandas as pd
 import math
 import glob
 import os
+from urllib.parse import urlparse
+
+
+def clean_jcrew_url(url):
+    parsed_url = urlparse(url)
+    return f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}"
+
+
+pd.set_option("display.max_colwidth", None)
 
 # Load the CSV files
 folder_path = "./jcrew"
@@ -13,6 +22,9 @@ csv_files = glob.glob(os.path.join(folder_path, "*.csv"))
 print(csv_files)
 # Read all CSV files and concatenate them into one DataFrame
 jcrew_df = pd.concat((pd.read_csv(file) for file in csv_files), ignore_index=True)
+
+jcrew_df["Product Url"] = jcrew_df["Product Url"].apply(clean_jcrew_url)
+print(jcrew_df["Product Url"])
 
 uniqlo_df = pd.read_csv("./uniqlo.csv")
 
@@ -161,5 +173,5 @@ def process_dataframes(dfs):
 
 
 # Run the script (choose one or both dataframes)
-process_dataframes([[jcrew_df, "J. Crew"]])
-# process_dataframes([[uniqlo_df, "Uniqlo"]])
+# process_dataframes([[jcrew_df, "J. Crew"]])
+process_dataframes([[uniqlo_df, "Uniqlo"]])
