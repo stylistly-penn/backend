@@ -15,7 +15,7 @@ class SeasonViewSet(viewsets.ModelViewSet):
 
     @action(
         detail=False,
-        methods=["put"],
+        methods=["patch"],
         url_path="user_update",
         permission_classes=[IsAuthenticated],  # Overrides the default permission
     )
