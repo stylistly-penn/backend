@@ -24,7 +24,7 @@ class SeasonSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Season
-        fields = ["name", "colors"]
+        fields = ["id", "name", "colors"]
 
     @extend_schema_field(serializers.ListField(child=serializers.CharField()))
     def get_colors(self, obj):

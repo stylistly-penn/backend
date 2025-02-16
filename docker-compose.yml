@@ -1,4 +1,5 @@
 services:
+  # Backend (API) Service
   db:
     image: postgres:15
     volumes:
@@ -25,11 +26,26 @@ services:
     depends_on:
       - db
 
+  # ML Service
   ml:
     image: color-analysis
     build: color-analysis/.
     ports:
       - "8080:8080"
+
+  celery:
+    build: color-analysis/.
+    command: celery -A celery_app.celery_app worker --loglevel=info
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:6
+    ports:
+      - "6379:6379"
 
 volumes:
   pgdata:
