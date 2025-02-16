@@ -8,4 +8,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY ./api .
 
-CMD ["fastapi", "run", "index.py"]
+CMD ["uvicorn", "index:app", "--host", "0.0.0.0", "--port", "8080"]
