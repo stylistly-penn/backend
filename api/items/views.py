@@ -172,3 +172,91 @@ class ItemViewSet(viewsets.ModelViewSet):
         except Exception:
             logger.error("Error creating item", exc_info=True)
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @extend_schema(
+        request=inline_serializer(
+            name="FilterItemsInput",
+            fields={
+                "color_id": serializers.IntegerField(
+                    required=False, help_text="Filter by color id"
+                ),
+                "brand_id": serializers.IntegerField(
+                    required=False, help_text="Filter by brand id"
+                ),
+                "size": serializers.CharField(
+                    required=False, help_text="Filter by item size"
+                ),
+                "order_by": serializers.CharField(
+                    required=False,
+                    help_text="Ordering field. Allowed values: 'euclidean_distance' or 'price'",
+                ),
+            },
+        ),
+        responses=ItemFilterSerializer,
+        description="""
+        Filters items based on the provided JSON body attributes:
+          - color_id: filter items that have an associated ItemColor with this color id.
+          - brand_id: filter items that match this brand.
+          - size: filter items with the given size.
+          - order_by: order the result by 'euclidean_distance' (if filtering by color) or by 'price'.
+        """,
+    )
+    @action(detail=False, methods=["post"], url_path="filter_items")
+    def filter_items(self, request):
+        color_id = request.data.get("color_id")
+        brand_id = request.data.get("brand_id")
+        size = request.data.get("size")
+        order_by = request.data.get("order_by")
+
+        qs = self.get_queryset()
+
+        # Filter by brand
+        if brand_id:
+            try:
+                brand_id = int(brand_id)
+                qs = qs.filter(brand__id=brand_id)
+            except ValueError:
+                return Response(
+                    {"error": "Invalid brand id"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        # Filter by size
+        if size:
+            qs = qs.filter(size=size)
+
+        # Filter by color using the related ItemColor relation
+        if color_id:
+            try:
+                color_id = int(color_id)
+                qs = qs.filter(item_colors__color__id=color_id)
+            except ValueError:
+                return Response(
+                    {"error": "Invalid color id"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        qs = qs.distinct()
+
+        # Determine ordering if provided
+        if order_by:
+            if order_by == "euclidean_distance":
+                qs = qs.order_by("item_colors__euclidean_distance")
+            elif order_by == "price":
+                qs = qs.order_by("price")
+            else:
+                return Response(
+                    {
+                        "error": "Invalid order_by value. Use 'euclidean_distance' or 'price'"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        serializer_context = {}
+        if color_id:
+            serializer_context["filter_color_id"] = color_id
+        if brand_id:
+            serializer_context["filter_brand_id"] = brand_id
+
+        serializer = ItemFilterSerializer(qs, many=True, context=serializer_context)
+        return Response(serializer.data)
