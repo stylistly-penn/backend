@@ -71,6 +71,37 @@ class ItemViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="brand_id",
+                description="The ID of the brand to filter by",
+                required=True,
+                type=int,
+            )
+        ]
+    )
+    @action(detail=False, methods=["get"], url_path="filter_by_brand/(?P<brand_id>\d+)")
+    def filter_by_brand_id(self, request, brand_id):
+        """
+        Filters items by a given brand id.
+
+        Returns items that have the specified brand.
+        The items are sorted by their id.
+        """
+        try:
+            brand_id = int(brand_id)
+        except ValueError:
+            return Response(
+                {"error": "Invalid brand id"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        items = self.get_queryset().filter(brand__id=brand_id).distinct()
+        serializer = ItemFilterSerializer(
+            items, many=True, context={"filter_brand_id": brand_id}
+        )
+        return Response(serializer.data)
+
+    @extend_schema(
         request=inline_serializer(
             name="ItemIngestionInput",
             fields={
