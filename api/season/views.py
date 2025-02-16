@@ -1,7 +1,8 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from drf_spectacular.utils import extend_schema, inline_serializer
 from api.season.models import Season
 from api.season.serializers import SeasonSerializer
 from api.permissions import IsAdminOrReadOnly
@@ -13,6 +14,41 @@ class SeasonViewSet(viewsets.ModelViewSet):
     serializer_class = SeasonSerializer
     permission_classes = [IsAdminOrReadOnly]
 
+    @extend_schema(
+        request=inline_serializer(
+            name="SeasonUpdateRequest",
+            fields={
+                "season": serializers.CharField(
+                    help_text="Name of the season to update the user's season with (e.g. 'Autumn')"
+                )
+            },
+        ),
+        responses=UserSerializer,
+        description="""
+            Updates the logged-in user's season.
+            
+            **Request body example:**
+            {
+                "season": "Autumn"
+            }
+            
+            **Response example:**
+            {
+                "username": "testuser",
+                "email": "",
+                "season": {
+                    "name": "Autumn",
+                    "colors": [
+                        {
+                            "code": "[59 68 52]",
+                            "color_id": 1
+                        },
+                        ...
+                    ]
+                }
+            }
+        """,
+    )
     @action(
         detail=False,
         methods=["patch"],
