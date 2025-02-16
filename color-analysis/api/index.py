@@ -14,7 +14,7 @@ from palette_classification import color_processing, palette
 import glob
 import json
 import io
-
+import time
 
 device = 'mps:0' if torch.backends.mps.is_available() else 'cpu'
 verbose = False
@@ -102,8 +102,29 @@ async def analyze_uploaded_file(file: UploadFile):
 async def create_upload_file(file: UploadFile):
     contents = await file.read()
     image = Image.open(io.BytesIO(contents)).convert('RGB')
-    # downsampled = image.resize((500, new_height), resample=resample_method)
-    return analyze(image)
+
+    max_size = 100
+
+    # Get original dimensions
+    width, height = image.size
+    
+    # Compute new size preserving aspect ratio
+    if width > height:
+        new_width = max_size
+        new_height = int((height / width) * max_size)
+    else:
+        new_height = max_size
+        new_width = int((width / height) * max_size)
+
+    # Resize using NEAREST (fastest but lowest quality)
+    pre_resize = time.time()
+    resized_image = image.resize((new_width, new_height), Image.NEAREST)
+    post_resize = time.time()
+    result = analyze(resized_image)
+    post_analyze = time.time()
+    result["resize_time"] = str(post_resize - pre_resize)
+    result["analyze_time"] = str(post_analyze - post_resize)
+    return result
 
 
 @app.get("/")
