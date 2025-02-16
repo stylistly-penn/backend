@@ -1,6 +1,7 @@
 from typing import OrderedDict, Union
 
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile
+from fastapi.responses import HTMLResponse
 import torch
 import cv2
 from PIL import Image
@@ -12,6 +13,7 @@ import matplotlib.pyplot as plt
 from palette_classification import color_processing, palette
 import glob
 import json
+import io
 
 
 device = 'mps:0' if torch.backends.mps.is_available() else 'cpu'
@@ -41,24 +43,11 @@ for category in ['dresses', 'lower_body', 'upper_body']:
 # instantiating pipeline
 pl = pipeline.Pipeline()
 
-app = FastAPI()
+sf = segmentation_filter.SegmentationFilter(segmentation_model)
+pl.add_filter(sf)
 
-@app.get("/")
-def read_root():
-    return {"Message": "Welcome to Stylistly!"}
-
-@app.get("/items/{item_id}")
-def read_item(item_id: str, q: Union[str, None] = None):
-    return {"item_id": item_id, "q": q}
-
-@app.get("/analyze/{image_path}")
-def analyze_image(image_path: str, q: Union[str, None] = None):
-    input = Image.open(image_path).convert('RGB')
-    
-    sf = segmentation_filter.SegmentationFilter(segmentation_model)
-    pl.add_filter(sf)
-
-    img, masks = pl.execute(input, device, verbose)
+def analyze(image: Image.Image) -> dict["Season": str, "Subtone": str]:
+    img, masks = pl.execute(image, device, verbose)
     img_segmented = color_processing.colorize_segmentation_masks(masks, segmentation_labels.labels)
 
     labels = OrderedDict({ label: segmentation_labels.labels[label] for label in ['skin', 'hair', 'lips', 'eyes'] })
@@ -76,7 +65,7 @@ def analyze_image(image_path: str, q: Union[str, None] = None):
     dominants_palette = palette.PaletteRGB('dominants', dominants)
 
     thresholds = (0.200, 0.422, 0.390)
-    subtone = palette.compute_subtone(dominants[lips_idx])
+    subtone = palette.compute_subtone(dominants[skin_idx])
     intensity = palette.compute_intensity(dominants[skin_idx])
     value = palette.compute_value(dominants[skin_idx], dominants[hair_idx], dominants[eyes_idx])
     contrast = palette.compute_contrast(dominants[hair_idx], dominants[eyes_idx])
@@ -85,3 +74,46 @@ def analyze_image(image_path: str, q: Union[str, None] = None):
     season_palette = palette.classify_user_palette(dominants_palette, reference_palettes)
 
     return {"Season": season_palette.description(), "Subtone": subtone}
+
+def downsample_image(image: Image.Image, new_width: int, new_height: int, resample_method=Image.Resampling.NEAREST) -> Image.Image:
+    """
+    Downsamples an image using PIL.
+
+    Args:
+        image_path: Path to the input image.
+        output_path: Path to save the downsampled image.
+        new_width: Desired width of the downsampled image.
+        new_height: Desired height of the downsampled image.
+        resample_method: Resampling filter to use (e.g., Image.Resampling.LANCZOS, Image.Resampling.BILINEAR).
+    """
+    try:
+        return 
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+app = FastAPI()
+
+@app.post("/analyzeupload/")
+async def analyze_uploaded_file(file: UploadFile):
+    input = Image.frombytes(await file.read())
+    return {"filename": str(input)}
+
+@app.post("/uploadfile/")
+async def create_upload_file(file: UploadFile):
+    contents = await file.read()
+    image = Image.open(io.BytesIO(contents)).convert('RGB')
+    # downsampled = image.resize((500, new_height), resample=resample_method)
+    return analyze(image)
+
+
+@app.get("/")
+async def main():
+    content = """
+        <body>
+            <form action="/uploadfile/" enctype="multipart/form-data" method="post">
+                <input name="file" type="file">
+                <input type="submit">
+            </form>
+        </body>
+    """
+    return HTMLResponse(content=content)
