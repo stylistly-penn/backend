@@ -4,6 +4,12 @@ from api.color.models import Color
 from drf_spectacular.utils import extend_schema_field
 
 
+class SeasonSimpleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Season
+        fields = ["id", "name"]
+
+
 class SeasonColorSerializer(serializers.ModelSerializer):
     """Serializes colors associated with a season."""
 
