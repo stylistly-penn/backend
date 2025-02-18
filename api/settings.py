@@ -53,9 +53,9 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.middleware.common.CommonMiddleware",
-    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -66,11 +66,31 @@ MIDDLEWARE = [
 # Allow framing of admin pages (needed for some admin enhancements)
 X_FRAME_OPTIONS = "SAMEORIGIN"
 
-# Ensure Django passes `Authorization` headers
+# Expand CORS settings
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",  # Your React frontend
+]
+
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_METHODS = [
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+]
+
 CORS_ALLOW_HEADERS = [
     "accept",
+    "accept-encoding",
     "authorization",
     "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
     "x-requested-with",
 ]
 
@@ -101,12 +121,6 @@ INSTALLED_APPS += [
     "rest_framework_simplejwt",
     "corsheaders",
 ]
-
-# CORS Settings (adjust for production)
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",  # Adjust for your frontend
-]
-CORS_ALLOW_CREDENTIALS = True
 
 # REST Framework Authentication Settings
 REST_FRAMEWORK = {

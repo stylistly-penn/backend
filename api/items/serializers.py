@@ -44,6 +44,28 @@ class ItemFilterSerializer(serializers.ModelSerializer):
         return []
 
 
+class ItemSeasonFilterSerializer(serializers.ModelSerializer):
+    """Serializes an item with its attributes and season-filtered colors field.
+
+    Expects a 'season_id' in the serializer context, and returns only
+    the colors that belong to that season.
+    """
+
+    brand = BrandSerializer(read_only=True)
+    colors = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Item
+        fields = ["id", "description", "price", "brand", "product_url", "colors"]
+
+    def get_colors(self, obj):
+        season_id = self.context.get("season_id")
+        if season_id:
+            qs = obj.item_colors.filter(color__color_seasons__season_id=season_id)
+            return ItemColorSerializer(qs, many=True, context=self.context).data
+        return []
+
+
 class ItemSerializer(serializers.ModelSerializer):
     """Serializes the item information along with all of its colors."""
 

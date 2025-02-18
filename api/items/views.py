@@ -19,14 +19,18 @@ from .models import Item
 from api.brands.models import Brand
 from api.color.models import Color
 from api.relationships.models import ItemColor
-from .serializers import ItemSerializer, ItemFilterSerializer
+from .serializers import (
+    ItemSerializer,
+    ItemFilterSerializer,
+    ItemSeasonFilterSerializer,
+)
 from rest_framework.pagination import PageNumberPagination
 
 logger = logging.getLogger("api.items")
 
 
 class ItemViewSet(viewsets.ModelViewSet):
-    queryset = Item.objects.all()
+    queryset = Item.objects.all().order_by("id")
     serializer_class = ItemSerializer
     permission_classes = [IsAuthenticatedReadOrAdminWrite]
     pagination_class = PageNumberPagination
@@ -178,39 +182,57 @@ class ItemViewSet(viewsets.ModelViewSet):
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @extend_schema(
-        request=inline_serializer(
-            name="FilterItemsInput",
-            fields={
-                "color_id": serializers.IntegerField(
-                    required=False, help_text="Filter by color id"
-                ),
-                "brand_id": serializers.IntegerField(
-                    required=False, help_text="Filter by brand id"
-                ),
-                "size": serializers.CharField(
-                    required=False, help_text="Filter by item size"
-                ),
-                "order_by": serializers.CharField(
-                    required=False,
-                    help_text="Ordering field. Allowed values: 'euclidean_distance' or 'price'",
-                ),
-            },
-        ),
+        parameters=[
+            OpenApiParameter(
+                name="color_id",
+                description="Filter by color id",
+                required=False,
+                type=int,
+            ),
+            OpenApiParameter(
+                name="brand_id",
+                description="Filter by brand id",
+                required=False,
+                type=int,
+            ),
+            OpenApiParameter(
+                name="size",
+                description="Filter by item size",
+                required=False,
+                type=str,
+            ),
+            OpenApiParameter(
+                name="season_id",
+                description="Filter by season id",
+                required=False,
+                type=int,
+            ),
+            OpenApiParameter(
+                name="order_by",
+                description="Order by field (euclidean_distance or price)",
+                required=False,
+                type=str,
+            ),
+        ],
         responses=ItemFilterSerializer,
         description="""
-        Filters items based on the provided JSON body attributes:
-          - color_id: filter items that have an associated ItemColor with this color id.
+        Filters items based on query parameters:
+          - color_id: filter items that have an associated ItemColor with this color id.
           - brand_id: filter items that match this brand.
           - size: filter items with the given size.
+          - season_id: filter items by season id.
           - order_by: order the result by 'euclidean_distance' (if filtering by color) or by 'price'.
+          
+        Note: If both color_id and season_id are provided, color_id takes precedence.
         """,
     )
-    @action(detail=False, methods=["post"], url_path="filter_items")
+    @action(detail=False, methods=["get"], url_path="filter_items")
     def filter_items(self, request):
-        color_id = request.data.get("color_id")
-        brand_id = request.data.get("brand_id")
-        size = request.data.get("size")
-        order_by = request.data.get("order_by")
+        color_id = request.query_params.get("color_id")
+        brand_id = request.query_params.get("brand_id")
+        size = request.query_params.get("size")
+        season_id = request.query_params.get("season_id")
+        order_by = request.query_params.get("order_by")
 
         qs = self.get_queryset()
 
@@ -229,7 +251,7 @@ class ItemViewSet(viewsets.ModelViewSet):
         if size:
             qs = qs.filter(size=size)
 
-        # Filter by color using the related ItemColor relation
+        # Filter by color or season (color takes precedence)
         if color_id:
             try:
                 color_id = int(color_id)
@@ -237,6 +259,15 @@ class ItemViewSet(viewsets.ModelViewSet):
             except ValueError:
                 return Response(
                     {"error": "Invalid color id"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        elif season_id:
+            try:
+                season_id = int(season_id)
+                qs = qs.filter(item_colors__color__color_seasons__season_id=season_id)
+            except ValueError:
+                return Response(
+                    {"error": "Invalid season id"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -249,19 +280,71 @@ class ItemViewSet(viewsets.ModelViewSet):
             elif order_by == "price":
                 qs = qs.order_by("price")
             else:
-                return Response(
-                    {
-                        "error": "Invalid order_by value. Use 'euclidean_distance' or 'price'"
-                    },
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+                qs = qs.order_by("id")
 
         serializer_context = {}
         if color_id:
             serializer_context["filter_color_id"] = color_id
         if brand_id:
             serializer_context["filter_brand_id"] = brand_id
+        if (
+            season_id and not color_id
+        ):  # Only use season context if color_id isn't present
+            serializer_context["season_id"] = season_id
 
         page = self.paginate_queryset(qs)
-        serializer = ItemFilterSerializer(page, many=True, context=serializer_context)
+        # Choose serializer based on whether we're filtering by color or season
+        if color_id:
+            serializer = ItemFilterSerializer(
+                page, many=True, context=serializer_context
+            )
+        elif season_id:
+            serializer = ItemSeasonFilterSerializer(
+                page, many=True, context=serializer_context
+            )
+        else:
+            serializer = ItemFilterSerializer(
+                page, many=True, context=serializer_context
+            )
+
+        return self.get_paginated_response(serializer.data)
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="season_id",
+                description="The ID of the season to filter by",
+                required=True,
+                type=int,
+            )
+        ]
+    )
+    @action(
+        detail=False, methods=["get"], url_path="filter_by_season/(?P<season_id>\d+)"
+    )
+    def filter_by_season(self, request, season_id):
+        """
+        Filters items by a given season.
+
+        Returns items that have at least one associated color in the specified season.
+        Only returns the colors that belong to that season for each item.
+        """
+        try:
+            season_id = int(season_id)
+        except ValueError:
+            return Response(
+                {"error": "Invalid season id"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        items = (
+            self.get_queryset()
+            .filter(item_colors__color__color_seasons__season_id=season_id)
+            .distinct()
+            .order_by("id")
+        )
+
+        page = self.paginate_queryset(items)
+        serializer = ItemSeasonFilterSerializer(
+            page, many=True, context={"season_id": season_id}
+        )
         return self.get_paginated_response(serializer.data)
