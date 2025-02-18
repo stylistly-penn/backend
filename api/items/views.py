@@ -20,6 +20,7 @@ from api.brands.models import Brand
 from api.color.models import Color
 from api.relationships.models import ItemColor
 from .serializers import ItemSerializer, ItemFilterSerializer
+from rest_framework.pagination import PageNumberPagination
 
 logger = logging.getLogger("api.items")
 
@@ -28,6 +29,7 @@ class ItemViewSet(viewsets.ModelViewSet):
     queryset = Item.objects.all()
     serializer_class = ItemSerializer
     permission_classes = [IsAuthenticatedReadOrAdminWrite]
+    pagination_class = PageNumberPagination
 
     @extend_schema(
         parameters=[
@@ -64,11 +66,11 @@ class ItemViewSet(viewsets.ModelViewSet):
             .order_by("item_colors__euclidean_distance")
         )
 
-        # Use the ItemFilterSerializer which expects "filter_color_id" in its context.
+        page = self.paginate_queryset(items)
         serializer = ItemFilterSerializer(
-            items, many=True, context={"filter_color_id": color_id}
+            page, many=True, context={"filter_color_id": color_id}
         )
-        return Response(serializer.data)
+        return self.get_paginated_response(serializer.data)
 
     @extend_schema(
         parameters=[
@@ -96,10 +98,12 @@ class ItemViewSet(viewsets.ModelViewSet):
             )
 
         items = self.get_queryset().filter(brand__id=brand_id).distinct()
+
+        page = self.paginate_queryset(items)
         serializer = ItemFilterSerializer(
-            items, many=True, context={"filter_brand_id": brand_id}
+            page, many=True, context={"filter_brand_id": brand_id}
         )
-        return Response(serializer.data)
+        return self.get_paginated_response(serializer.data)
 
     @extend_schema(
         request=inline_serializer(
@@ -258,5 +262,6 @@ class ItemViewSet(viewsets.ModelViewSet):
         if brand_id:
             serializer_context["filter_brand_id"] = brand_id
 
-        serializer = ItemFilterSerializer(qs, many=True, context=serializer_context)
-        return Response(serializer.data)
+        page = self.paginate_queryset(qs)
+        serializer = ItemFilterSerializer(page, many=True, context=serializer_context)
+        return self.get_paginated_response(serializer.data)
