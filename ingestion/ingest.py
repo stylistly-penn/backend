@@ -55,7 +55,12 @@ def get_colors():
     url = "http://localhost:8000/colors/"
     response = requests.get(url)
     if response.status_code == 200:
-        return response.json()
+        data = response.json()
+        # The API likely returns a paginated response with 'results' key
+        # Return just the results array
+        if isinstance(data, dict) and "results" in data:
+            return data["results"]
+        return data
     else:
         print(f"❌ Failed to fetch colors: {response.text}")
         return []
@@ -72,7 +77,7 @@ def euclidean_distance(rgb1, rgb2):
     return math.sqrt(sum((a - b) ** 2 for a, b in zip(rgb1, rgb2)))
 
 
-def create_item(row, token, brand):
+def create_item(row, token, brand, colors):
     url = "http://localhost:8000/items/"
 
     # Debug: Check for missing fields
@@ -88,7 +93,7 @@ def create_item(row, token, brand):
             print(f"DEBUG: Field '{field_name}' is NaN for row: {row.to_dict()}")
 
     try:
-        price_value = float(row["Cost"][1:])
+        price_value = float(row["Cost"].replace("$", ""))
     except Exception as e:
         print(f"DEBUG: Could not convert cost '{row['Cost']}' to float. Error: {e}")
         return None
@@ -105,16 +110,20 @@ def create_item(row, token, brand):
         print(f"DEBUG: Error parsing RGB '{rgb_str}': {e}")
         return None
 
-    colors = get_colors()
-    if not colors:
-        print("DEBUG: No colors fetched.")
-        return None
+    # Debug print to see what we're getting from the API
+    print(f"DEBUG: First color from API: {colors[0] if colors else 'No colors'}")
 
     best_color = None
     best_distance = float("inf")
     for color in colors:
         try:
-            color_rgb = parse_rgb(color["code"])
+            # Make sure we're accessing the correct field from the color object
+            color_code = color.get("code")
+            if not color_code:
+                print(f"DEBUG: No code field in color object: {color}")
+                continue
+
+            color_rgb = parse_rgb(color_code)
             distance = euclidean_distance(item_rgb, color_rgb)
             if distance < best_distance:
                 best_distance = distance
@@ -145,6 +154,12 @@ def create_item(row, token, brand):
 
 
 def process_dataframes(dfs):
+    # Fetch colors once at the start
+    colors = get_colors()
+    if not colors:
+        print("❌ Stopping script because no colors were fetched.")
+        return []
+
     for df, brand in dfs:
         print("🚀 Processing dataframe for brand:", brand)
         token = get_auth_token()
@@ -162,7 +177,8 @@ def process_dataframes(dfs):
             for rgb in unique_rgbs:
                 # Choose one representative row for this RGB value
                 row = group[group["RGB"] == rgb].iloc[0]
-                response = create_item(row, token, brand)
+                # Pass the colors to create_item
+                response = create_item(row, token, brand, colors)
                 if response:
                     result_text = f"status {response.status_code}"
                 else:
@@ -173,5 +189,5 @@ def process_dataframes(dfs):
 
 
 # Run the script (choose one or both dataframes)
-# process_dataframes([[jcrew_df, "J. Crew"]])
+process_dataframes([[jcrew_df, "J. Crew"]])
 process_dataframes([[uniqlo_df, "Uniqlo"]])
