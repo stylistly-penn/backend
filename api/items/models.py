@@ -8,6 +8,7 @@ class Item(models.Model):
     size = models.CharField(max_length=50)
     description = models.TextField()
     product_url = models.TextField()
+    product_id = models.TextField(default="")
     brand = models.ForeignKey(Brand, on_delete=models.CASCADE, related_name="items")
 
     permissions_classes = [AllowAny]
@@ -15,7 +16,7 @@ class Item(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["description", "price", "size"],
+                fields=["description", "price", "size", "product_id"],
                 name="unique_item_constraint",
             )
         ]

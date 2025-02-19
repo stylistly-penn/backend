@@ -118,6 +118,7 @@ class ItemViewSet(viewsets.ModelViewSet):
                 "price": serializers.FloatField(help_text="Price of the item"),
                 "brand": serializers.CharField(help_text="Brand name of the item"),
                 "product_url": serializers.URLField(help_text="URL for the product"),
+                "product_id": serializers.CharField(help_text="Product ID"),
                 "item_url": serializers.URLField(help_text="URL for the item image"),
                 "color_id": serializers.IntegerField(
                     help_text="ID of the closest color"
@@ -137,6 +138,7 @@ class ItemViewSet(viewsets.ModelViewSet):
             - **price** (float)
             - **brand** (string)
             - **product_url** (string)
+            - **product_id** (string)
             - **item_url** (string)
             - **color_id** (integer)
             - **euclidean_distance** (float)
@@ -161,6 +163,7 @@ class ItemViewSet(viewsets.ModelViewSet):
                     price=float(request.data.get("price")),
                     brand=brand,
                     product_url=request.data.get("product_url"),
+                    product_id=request.data.get("product_id"),
                 )
 
                 # Always create a new ItemColor record for each ingestion call

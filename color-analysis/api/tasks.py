@@ -51,7 +51,7 @@ def analyze(image: Image.Image) -> dict:
     img_segmented = color_processing.colorize_segmentation_masks(
         masks, segmentation_labels.labels
     )
-
+    print("HERE1")
     # Create an OrderedDict for selected labels
     from collections import OrderedDict
 
@@ -66,7 +66,7 @@ def analyze(image: Image.Image) -> dict:
     hair_idx = utils.from_key_to_index(labels, "hair")
     lips_idx = utils.from_key_to_index(labels, "lips")
     eyes_idx = utils.from_key_to_index(labels, "eyes")
-
+    print("HERE0")
     segmentation_masks = color_processing.compute_segmentation_masks(
         img_segmented, labels
     )
@@ -91,6 +91,7 @@ def analyze(image: Image.Image) -> dict:
     season_palette = palette.classify_user_palette(
         dominants_palette, reference_palettes
     )
+    print("HERE")
     return {"Season": season_palette.description(), "Subtone": subtone}
 
 
@@ -117,8 +118,9 @@ def process_image_task(file_contents: bytes) -> dict:
     pre_resize = time.time()
     resized_image = image.resize((new_width, new_height), Image.NEAREST)
     post_resize = time.time()
-
+    print("YESS")
     result = analyze(resized_image)
+    print("NOO")
     post_analyze = time.time()
     result["resize_time"] = str(post_resize - pre_resize)
     result["analyze_time"] = str(post_analyze - post_resize)

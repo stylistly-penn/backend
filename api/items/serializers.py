@@ -31,7 +31,15 @@ class ItemFilterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Item
-        fields = ["id", "description", "price", "brand", "product_url", "colors"]
+        fields = [
+            "id",
+            "description",
+            "price",
+            "brand",
+            "product_url",
+            "colors",
+            "product_id",
+        ]
 
     def get_colors(self, obj):
         filter_color_id = self.context.get("filter_color_id")
@@ -56,7 +64,15 @@ class ItemSeasonFilterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Item
-        fields = ["id", "description", "price", "brand", "product_url", "colors"]
+        fields = [
+            "id",
+            "description",
+            "price",
+            "brand",
+            "product_url",
+            "colors",
+            "product_id",
+        ]
 
     def get_colors(self, obj):
         season_id = self.context.get("season_id")
@@ -74,4 +90,12 @@ class ItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Item
-        fields = ["id", "description", "price", "brand", "product_url", "colors"]
+        fields = [
+            "id",
+            "description",
+            "price",
+            "brand",
+            "product_url",
+            "colors",
+            "product_id",
+        ]
