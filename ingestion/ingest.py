@@ -24,9 +24,11 @@ print(csv_files)
 jcrew_df = pd.concat((pd.read_csv(file) for file in csv_files), ignore_index=True)
 
 jcrew_df["Product Url"] = jcrew_df["Product Url"].apply(clean_jcrew_url)
+jcrew_df["Product Id"] = jcrew_df["Product Url"].str.split("/").str[-1]
 print(jcrew_df["Product Url"])
 
 uniqlo_df = pd.read_csv("./uniqlo.csv")
+uniqlo_df["Product Id"] = uniqlo_df["Product Url"].str.split("/").str[-2]
 
 # Use a regex to extract cost values
 regex = r"(\$\d+(?:\.\d+)?)"
@@ -84,6 +86,7 @@ def create_item(row, token, brand, colors):
     fields_to_check = {
         "description": row.get("Item"),
         "Cost": row.get("Cost"),
+        "product_id": row.get("Product Id"),
         "item_url": row.get("Item Url"),
         "product_url": row.get("Product Url"),
         "RGB": row.get("RGB"),
@@ -101,6 +104,7 @@ def create_item(row, token, brand, colors):
     description = row["Item"] if not pd.isna(row["Item"]) else ""
     item_url = row["Item Url"] if not pd.isna(row["Item Url"]) else ""
     product_url = row["Product Url"] if not pd.isna(row["Product Url"]) else ""
+    product_id = row["Product Id"] if not pd.isna(row["Product Id"]) else ""
     rgb_str = row["RGB"] if not pd.isna(row["RGB"]) else ""
 
     # Parse the item's RGB value for calculation
@@ -141,6 +145,7 @@ def create_item(row, token, brand, colors):
         "brand": brand,
         "item_url": item_url,
         "product_url": product_url,
+        "product_id": product_id,
         "color_id": best_color["id"],
         "euclidean_distance": best_distance,
         "real_rgb": rgb_str,  # The original RGB from the CSV
@@ -189,5 +194,5 @@ def process_dataframes(dfs):
 
 
 # Run the script (choose one or both dataframes)
-process_dataframes([[jcrew_df, "J. Crew"]])
+# process_dataframes([[jcrew_df, "J. Crew"]])
 process_dataframes([[uniqlo_df, "Uniqlo"]])
