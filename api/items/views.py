@@ -1,7 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
 from rest_framework import serializers
 from django.db import transaction, IntegrityError
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Min
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework import status
@@ -25,6 +25,7 @@ from .serializers import (
     ItemSeasonFilterSerializer,
 )
 from rest_framework.pagination import PageNumberPagination
+from django.db import models
 
 logger = logging.getLogger("api.items")
 
@@ -255,7 +256,20 @@ class ItemViewSet(viewsets.ModelViewSet):
         if color_id:
             try:
                 color_id = int(color_id)
-                qs = qs.filter(item_colors__color__id=color_id)
+                if order_by == "euclidean_distance":
+                    # Annotate with the specific color's euclidean distance and order by it
+                    qs = (
+                        qs.filter(item_colors__color_id=color_id)
+                        .annotate(
+                            color_distance=models.Min(
+                                "item_colors__euclidean_distance",
+                                filter=models.Q(item_colors__color_id=color_id),
+                            )
+                        )
+                        .order_by("color_distance")
+                    )
+                else:
+                    qs = qs.filter(item_colors__color_id=color_id)
             except ValueError:
                 return Response(
                     {"error": "Invalid color id"},
@@ -264,7 +278,25 @@ class ItemViewSet(viewsets.ModelViewSet):
         elif season_id:
             try:
                 season_id = int(season_id)
-                qs = qs.filter(item_colors__color__color_seasons__season_id=season_id)
+                if order_by == "euclidean_distance":
+                    qs = (
+                        qs.filter(
+                            item_colors__color__color_seasons__season_id=season_id
+                        )
+                        .annotate(
+                            min_season_distance=models.Min(
+                                "item_colors__euclidean_distance",
+                                filter=models.Q(
+                                    item_colors__color__color_seasons__season_id=season_id
+                                ),
+                            )
+                        )
+                        .order_by("min_season_distance")
+                    )
+                else:
+                    qs = qs.filter(
+                        item_colors__color__color_seasons__season_id=season_id
+                    )
             except ValueError:
                 return Response(
                     {"error": "Invalid season id"},
@@ -273,11 +305,11 @@ class ItemViewSet(viewsets.ModelViewSet):
 
         qs = qs.distinct()
 
-        # Determine ordering if provided
-        if order_by:
-            if order_by == "euclidean_distance":
-                qs = qs.order_by("item_colors__euclidean_distance")
-            elif order_by == "price":
+        # Only apply other ordering if we haven't already ordered by distance
+        if order_by and not (
+            (color_id or season_id) and order_by == "euclidean_distance"
+        ):
+            if order_by == "price":
                 qs = qs.order_by("price")
             else:
                 qs = qs.order_by("id")
