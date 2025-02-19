@@ -194,5 +194,5 @@ def process_dataframes(dfs):
 
 
 # Run the script (choose one or both dataframes)
-# process_dataframes([[jcrew_df, "J. Crew"]])
+process_dataframes([[jcrew_df, "J. Crew"]])
 process_dataframes([[uniqlo_df, "Uniqlo"]])

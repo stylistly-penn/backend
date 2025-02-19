@@ -16,7 +16,7 @@ class Item(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["description", "price", "size", "product_id"],
+                fields=["product_id"],
                 name="unique_item_constraint",
             )
         ]
