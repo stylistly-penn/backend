@@ -58,6 +58,12 @@ class RegisterView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        if not first_name or not last_name:
+            return Response(
+                {"error": "First and last name are required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         if User.objects.filter(email=email).exists():
             return Response(
                 {"error": "Email already taken"},
