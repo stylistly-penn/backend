@@ -20,7 +20,7 @@ class ItemColor(models.Model):
     permissions_classes = [AllowAny]
 
     class Meta:
-        unique_together = ("item", "real_rgb")
+        unique_together = ("item", "real_rgb", "color")
 
 
 class SeasonColor(models.Model):

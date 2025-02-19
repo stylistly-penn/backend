@@ -54,18 +54,37 @@ def get_auth_token():
 
 
 def get_colors():
-    url = "http://localhost:8000/colors/"
-    response = requests.get(url)
-    if response.status_code == 200:
-        data = response.json()
-        # The API likely returns a paginated response with 'results' key
-        # Return just the results array
-        if isinstance(data, dict) and "results" in data:
-            return data["results"]
-        return data
-    else:
+    base_url = "http://localhost:8000/colors/"
+    response = requests.get(base_url)
+    if response.status_code != 200:
         print(f"❌ Failed to fetch colors: {response.text}")
         return []
+
+    data = response.json()
+    if isinstance(data, dict) and "results" in data:
+        colors = data["results"]
+        total = data.get("count", len(colors))
+        page_size = len(colors)
+
+        # Calculate total pages (if page_size is > 0)
+        total_pages = math.ceil(total / page_size) if page_size > 0 else 1
+
+        # Page 1 has been fetched, now get pages 2 to total_pages
+        for page in range(2, total_pages + 1):
+            page_url = f"{base_url}?page={page}"
+            page_response = requests.get(page_url)
+            if page_response.status_code == 200:
+                page_data = page_response.json()
+                colors.extend(page_data.get("results", []))
+            else:
+                print(
+                    f"❌ Failed to fetch colors for page {page}: {page_response.text}"
+                )
+                break
+        return colors
+    else:
+        # If the response is not paginated, return the data as-is
+        return data
 
 
 def parse_rgb(rgb_str):
@@ -117,8 +136,9 @@ def create_item(row, token, brand, colors):
     # Debug print to see what we're getting from the API
     print(f"DEBUG: First color from API: {colors[0] if colors else 'No colors'}")
 
-    best_color = None
-    best_distance = float("inf")
+    matching_colors = []
+    threshold = 50
+
     for color in colors:
         try:
             # Make sure we're accessing the correct field from the color object
@@ -129,38 +149,41 @@ def create_item(row, token, brand, colors):
 
             color_rgb = parse_rgb(color_code)
             distance = euclidean_distance(item_rgb, color_rgb)
-            if distance < best_distance:
-                best_distance = distance
-                best_color = color
+            if distance <= threshold:
+                matching_colors.append((color, distance))
         except Exception as e:
             print(f"DEBUG: Error processing color {color}: {e}")
 
-    if best_color is None:
-        print("DEBUG: No suitable color found.")
+    if not matching_colors:
+        print("DEBUG: No colors found within threshold.")
         return None
 
-    data = {
-        "description": description,
-        "price": price_value,
-        "brand": brand,
-        "item_url": item_url,
-        "product_url": product_url,
-        "product_id": product_id,
-        "color_id": best_color["id"],
-        "euclidean_distance": best_distance,
-        "real_rgb": rgb_str,  # The original RGB from the CSV
-    }
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {token}",
-    }
-    response = requests.post(url, data=json.dumps(data), headers=headers)
+    responses = []
+    for color, distance in matching_colors:
+        data = {
+            "description": description,
+            "price": price_value,
+            "brand": brand,
+            "item_url": item_url,
+            "product_url": product_url,
+            "product_id": product_id,
+            "color_id": color["id"],
+            "euclidean_distance": distance,
+            "real_rgb": rgb_str,  # The original RGB from the CSV
+        }
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {token}",
+        }
+        response = requests.post(url, data=json.dumps(data), headers=headers)
+        responses.append(response)
     return response
 
 
 def process_dataframes(dfs):
     # Fetch colors once at the start
     colors = get_colors()
+    print("Colors from fetch: " + str(colors))
     if not colors:
         print("❌ Stopping script because no colors were fetched.")
         return []

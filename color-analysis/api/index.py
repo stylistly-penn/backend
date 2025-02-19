@@ -25,7 +25,6 @@ async def create_upload_file(file: UploadFile):
     and returns the task ID.
     """
     contents = await file.read()
-    print("HERE2")
     print("Submitting task with file size:", len(contents))
     task = process_image_task.delay(contents)
     print("Task submitted:", task.id)
