@@ -255,24 +255,19 @@ class ItemViewSet(viewsets.ModelViewSet):
         if size:
             qs = qs.filter(size=size)
 
-        # Filter by color or season (color takes precedence)
+        # Filter and order by color, season, or neither
         if color_id:
             try:
                 color_id = int(color_id)
+                qs = qs.filter(item_colors__color_id=color_id)
                 if order_by == "euclidean_distance":
-                    # Annotate with the specific color's euclidean distance and order by it
-                    qs = (
-                        qs.filter(item_colors__color_id=color_id)
-                        .annotate(
-                            color_distance=models.Min(
-                                "item_colors__euclidean_distance",
-                                filter=models.Q(item_colors__color_id=color_id),
-                            )
+                    # Use the euclidean distance for the specific color
+                    qs = qs.annotate(
+                        color_distance=models.Min(
+                            "item_colors__euclidean_distance",
+                            filter=models.Q(item_colors__color_id=color_id),
                         )
-                        .order_by("color_distance")
-                    )
-                else:
-                    qs = qs.filter(item_colors__color_id=color_id)
+                    ).order_by("color_distance")
             except ValueError:
                 return Response(
                     {"error": "Invalid color id"},
@@ -281,64 +276,56 @@ class ItemViewSet(viewsets.ModelViewSet):
         elif season_id:
             try:
                 season_id = int(season_id)
+                qs = qs.filter(item_colors__color__color_seasons__season_id=season_id)
                 if order_by == "euclidean_distance":
-                    qs = (
-                        qs.filter(
-                            item_colors__color__color_seasons__season_id=season_id
+                    # Use the minimum euclidean distance among colors in the season
+                    qs = qs.annotate(
+                        min_season_distance=models.Min(
+                            "item_colors__euclidean_distance",
+                            filter=models.Q(
+                                item_colors__color__color_seasons__season_id=season_id
+                            ),
                         )
-                        .annotate(
-                            min_season_distance=models.Min(
-                                "item_colors__euclidean_distance",
-                                filter=models.Q(
-                                    item_colors__color__color_seasons__season_id=season_id
-                                ),
-                            )
-                        )
-                        .order_by("min_season_distance")
-                    )
-                else:
-                    qs = qs.filter(
-                        item_colors__color__color_seasons__season_id=season_id
-                    )
+                    ).order_by("min_season_distance")
             except ValueError:
                 return Response(
                     {"error": "Invalid season id"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
+        else:
+            # No color or season filter
+            if order_by == "euclidean_distance":
+                # Use the minimum euclidean distance across all colors
+                qs = qs.annotate(
+                    min_distance=models.Min("item_colors__euclidean_distance")
+                ).order_by("min_distance")
 
         qs = qs.distinct()
 
-        # Only apply other ordering if we haven't already ordered by distance
-        if order_by and not (
-            (color_id or season_id) and order_by == "euclidean_distance"
-        ):
-            if order_by == "price":
-                qs = qs.order_by("price")
-            else:
-                qs = qs.order_by("id")
+        # Apply price ordering if requested and not already ordered by distance
+        if order_by == "price":
+            qs = qs.order_by("price")
+        elif not order_by or (order_by != "euclidean_distance"):
+            qs = qs.order_by("id")
 
         serializer_context = {}
         if color_id:
             serializer_context["filter_color_id"] = color_id
         if brand_id:
             serializer_context["filter_brand_id"] = brand_id
-        if (
-            season_id and not color_id
-        ):  # Only use season context if color_id isn't present
+        if season_id and not color_id:
             serializer_context["season_id"] = season_id
 
         page = self.paginate_queryset(qs)
-        # Choose serializer based on whether we're filtering by color or season
-        if color_id:
+        # Use ItemSerializer when no color/season filter to show all colors
+        if not color_id and not season_id:
+            serializer = ItemSerializer(page, many=True)
+        elif color_id:
             serializer = ItemFilterSerializer(
-                page, many=True, context=serializer_context
-            )
-        elif season_id:
-            serializer = ItemSeasonFilterSerializer(
                 page, many=True, context=serializer_context
             )
         else:
-            serializer = ItemFilterSerializer(
+            serializer = ItemSeasonFilterSerializer(
                 page, many=True, context=serializer_context
             )
 
