@@ -12,21 +12,33 @@ def clean_jcrew_url(url):
     return f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}"
 
 
+
 pd.set_option("display.max_colwidth", None)
 
+
+### J Crew
 # Load the CSV files
 folder_path = "./jcrew"
 
 # Get all CSV file paths inside the folder
 csv_files = glob.glob(os.path.join(folder_path, "*.csv"))
-print(csv_files)
+# print(csv_files)
 # Read all CSV files and concatenate them into one DataFrame
 jcrew_df = pd.concat((pd.read_csv(file) for file in csv_files), ignore_index=True)
 
 jcrew_df["Product Url"] = jcrew_df["Product Url"].apply(clean_jcrew_url)
 jcrew_df["Product Id"] = jcrew_df["Product Url"].str.split("/").str[-1]
-print(jcrew_df["Product Url"])
+# print(jcrew_df["Product Url"])
 
+### Abercrombie
+folder_path = "./abercrombie"
+csv_files = glob.glob(os.path.join(folder_path, "*.csv"))
+abercrombie_df = pd.concat((pd.read_csv(file) for file in csv_files), ignore_index=True)
+abercrombie_df["Product Url"] = abercrombie_df["Product Url"].apply(clean_jcrew_url)
+abercrombie_df["Product Id"] = abercrombie_df["Product Url"].str.split("/").str[-1].str.split("-").str[-1]
+print(abercrombie_df["Product Url"])
+
+### Uniqlo
 uniqlo_df = pd.read_csv("./uniqlo.csv")
 uniqlo_df["Product Id"] = uniqlo_df["Product Url"].str.split("/").str[-2]
 
@@ -34,7 +46,7 @@ uniqlo_df["Product Id"] = uniqlo_df["Product Url"].str.split("/").str[-2]
 regex = r"(\$\d+(?:\.\d+)?)"
 jcrew_df["Cost"] = jcrew_df["Cost"].str.extract(regex)
 uniqlo_df["Cost"] = uniqlo_df["Cost"].str.extract(regex)
-
+abercrombie_df["Cost"] = abercrombie_df["Cost"].str.extract(regex)
 
 def get_auth_token():
     login_url = "http://localhost:8000/auth/login/"
@@ -216,6 +228,7 @@ def process_dataframes(dfs):
         return all_results
 
 
-# Run the script (choose one or both dataframes)
-process_dataframes([[jcrew_df, "J. Crew"]])
-process_dataframes([[uniqlo_df, "Uniqlo"]])
+# # Run the script (choose one or both dataframes)
+# process_dataframes([[jcrew_df, "J. Crew"]])
+# process_dataframes([[uniqlo_df, "Uniqlo"]])
+process_dataframes([[abercrombie_df, "Abercrombie"]])
