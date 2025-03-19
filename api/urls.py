@@ -17,6 +17,7 @@ from .accounts.views import (
     RegisterView,
     AuthCheckView,
 )
+from .lists.urls import router as lists_router
 
 router = DefaultRouter()
 router.register(r"items", ItemViewSet)
@@ -30,6 +31,7 @@ urlpatterns = [
     path("grappelli/", include("grappelli.urls")),
     #  API Routes (ViewSets)
     path("", include(router.urls)),
+    path("", include(lists_router.urls)),  # Add lists URLs
     #  Authentication Routes
     path("auth/login/", LoginView.as_view(), name="login"),
     path("auth/logout/", LogoutView.as_view(), name="logout"),

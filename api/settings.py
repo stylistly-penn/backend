@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "api.color",
     "api.season",
     "api.relationships",
+    "api.lists.apps.ListsConfig",
     "drf_spectacular",
     "drf_spectacular_sidecar",
     "api.apps.ApiConfig",

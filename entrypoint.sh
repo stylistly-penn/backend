@@ -2,6 +2,9 @@
 # Create logs directory if it doesn't exist
 mkdir -p /app/logs
 
+# Change to the app directory where pyproject.toml is located
+cd /app
+
 # Wait for the database to be ready
 until pg_isready -h "$POSTGRES_HOST" -p 5432; do
   echo "Waiting for PostgreSQL to be ready..."
@@ -26,4 +29,4 @@ python manage.py create_test_user
 python manage.py create_seasons
 
 # Start the server with hot reloading
-exec poetry run watchmedo auto-restart --directory=api --pattern=*.py --recursive -- python manage.py runserver 0.0.0.0:8000
+exec watchmedo auto-restart --directory=api --pattern=*.py --recursive -- python manage.py runserver 0.0.0.0:8000

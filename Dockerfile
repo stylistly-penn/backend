@@ -25,7 +25,7 @@ RUN poetry config virtualenvs.create false
 RUN poetry install --no-root
 
 # Install watchdog to enable hot reloading
-RUN poetry run pip install watchdog
+RUN pip install watchdog
 
 # Set environment variables for Django
 ENV PYTHONUNBUFFERED=1

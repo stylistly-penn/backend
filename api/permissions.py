@@ -26,3 +26,17 @@ class IsAuthenticatedReadOrAdminWrite(BasePermission):
             return bool(request.user and request.user.is_authenticated)
         # For write operations, user must be an admin.
         return bool(request.user and request.user.is_staff)
+
+
+class IsOwnerOrReadOnly(BasePermission):
+    """
+    Custom permission:
+    - For all methods, the user must be authenticated.
+    - For all methods, the user must be the owner of the object.
+    """
+
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_authenticated)
+
+    def has_object_permission(self, request, view, obj):
+        return obj.owner == request.user
