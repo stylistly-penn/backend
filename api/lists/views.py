@@ -8,6 +8,7 @@ from django.db.models import Min, Q
 from .models import List, ListItem
 from .serializers import ListSerializer, ListItemSerializer, ListWithItemsSerializer
 from api.permissions import IsOwnerOrReadOnly
+from rest_framework.pagination import PageNumberPagination
 
 # Create your views here.
 
@@ -15,6 +16,7 @@ from api.permissions import IsOwnerOrReadOnly
 class ListViewSet(viewsets.ModelViewSet):
     serializer_class = ListSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
+    pagination_class = PageNumberPagination
 
     def get_queryset(self):
         return List.objects.filter(owner=self.request.user)
@@ -38,6 +40,49 @@ class ListViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=["post", "delete"])
+    def remove_item(self, request, pk=None):
+        list_obj = self.get_object()
+        item_id = request.data.get("item_id")
+
+        if not item_id:
+            return Response(
+                {"error": "item_id is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # Find the list item
+            list_item = ListItem.objects.filter(list=list_obj, item_id=item_id).first()
+
+            if not list_item:
+                return Response(
+                    {"error": "Item not found in this list"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            # Delete the list item
+            list_item.delete()
+
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=["get"])
+    def has_item(self, request, pk=None):
+        list_obj = self.get_object()
+        item_id = request.query_params.get("item_id")
+
+        if not item_id:
+            return Response(
+                {"error": "item_id query parameter is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Check if the item exists in the list
+        item_exists = ListItem.objects.filter(list=list_obj, item_id=item_id).exists()
+
+        return Response({"has_item": item_exists})
 
     @action(detail=True, methods=["get"])
     def items(self, request, pk=None):
@@ -80,7 +125,15 @@ class ListViewSet(viewsets.ModelViewSet):
         if reverse:
             list_items = list_items.reverse()
 
-        # Serialize the ordered list items
+        # Apply pagination while maintaining order
+        page = self.paginate_queryset(list_items)
+        if page is not None:
+            serializer = ListItemSerializer(
+                page, many=True, context={"request": request}
+            )
+            return self.get_paginated_response(serializer.data)
+
+        # Fallback (if pagination is disabled)
         serializer = ListItemSerializer(
             list_items, many=True, context={"request": request}
         )
