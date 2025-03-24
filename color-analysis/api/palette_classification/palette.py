@@ -26,7 +26,7 @@ def compact_string_(array):
     return string
 
 
-def compute_subtone(lips_color):
+def compute_subtone(lips_color: torch.Tensor):
     """
     .. description::
     Computes subtone (S) by comparing lips color with colors peach and purple according to the following rule:
@@ -38,14 +38,27 @@ def compute_subtone(lips_color):
     """
     assert(lips_color.shape == (3, 1, 1))
 
-    peach_color = torch.tensor([255, 230, 182], dtype=torch.uint8).reshape(lips_color.shape)
-    purple_color = torch.tensor([210, 120, 180], dtype=torch.uint8).reshape(lips_color.shape)
+    flat_color = [x.item() for x in lips_color.flatten()]
 
-    if color_processing.color_distance(lips_color, peach_color) < color_processing.color_distance(lips_color,
-                                                                                                  purple_color):
-        return 'warm'
+    print(str(flat_color))
+
+    def rgb_to_lab(rgb):
+        rgb = np.array(rgb, dtype=np.uint8).reshape(1, 1, 3)
+        lab = cv2.cvtColor(rgb, cv2.COLOR_RGB2LAB)
+        return lab[0, 0]
+
+    L, a, b = rgb_to_lab(flat_color)
     
-    return 'cold'
+    # Define expected range for a* in skin tones
+    a_min, a_max = -5, 25  # Approximate observed range for human skin
+    a_scaled = (a - a_min) / (a_max - a_min)  # Normalize a* to 0-1 scale
+    
+    threshold = 5  # Midpoint in normalized range
+
+    if a_scaled < threshold:
+        return 'cold'
+    else:
+        return 'warm'
 
 
 def compute_contrast(hair_color, eyes_color):
